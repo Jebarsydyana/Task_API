@@ -41,3 +41,12 @@ python3 -m http.server 8000
 Open the app in browser:
 
 http://127.0.0.1:8000/index.html
+
+Live Frontend Deployment (Vercel)
+
+The frontend of this project is deployed on Vercel and can be accessed here:
+
+https://task-api-omega.vercel.app/
+
+Note: The Flask backend API runs locally (`http://127.0.0.1:5000`) and is demonstrated through screenshots and code.
+The deployed link is mainly for viewing the UI.
