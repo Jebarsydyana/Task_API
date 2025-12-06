@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Task Manager UI</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            width: 60%; 
+            margin: 40px auto; 
+        }
+        h2, h3 {
+            text-align: left;
+        }
+        input, button {
+            padding: 8px;
+            margin-top: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            cursor: pointer;
+        }
+        .task {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+        .completed {
+            background-color: #d4ffd4;
+            text-decoration: line-through;
+        }
+        .buttons {
+            margin-top: 8px;
+        }
+        .buttons button {
+            width: auto;
+            margin-right: 8px;
+        }
+        .msg {
+            margin-top: 10px;
+            color: #555;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Task Manager</h2>
+
+<form id="taskForm">
+    <input type="text" id="title" placeholder="Task Title" required>
+    <input type="text" id="description" placeholder="Description">
+    <button type="submit">Add Task</button>
+</form>
+
+<div class="msg" id="message"></div>
+
+<h3>Your Tasks</h3>
+<div id="taskList"></div>
+
+<script>
+const API_URL = "http://127.0.0.1:5000/tasks";
+
+async function loadTasks() {
+    try {
+        const response = await fetch(API_URL);
+        const tasks = await response.json();
+        const taskList = document.getElementById("taskList");
+        taskList.innerHTML = "";
+
+        if (tasks.length === 0) {
+            taskList.innerHTML = "<p>No tasks yet. Add one above.</p>";
+            return;
+        }
+
+        tasks.forEach(task => {
+            const div = document.createElement("div");
+            div.className = "task" + (task.completed ? " completed" : "");
+            div.innerHTML = `
+                <b>${task.title}</b><br>
+                ${task.description || ""}<br>
+                <div class="buttons">
+                    <button onclick="markComplete(${task.id})">Mark Complete</button>
+                    <button onclick="deleteTask(${task.id})">Delete</button>
+                </div>
+            `;
+            taskList.appendChild(div);
+        });
+    } catch (error) {
+        console.error("Error loading tasks:", error);
+        document.getElementById("message").textContent = "Error loading tasks. Check console.";
+    }
+}
+
+document.getElementById("taskForm").addEventListener("submit", async function (event) {
+    event.preventDefault(); // stop page reload
+
+    const titleInput = document.getElementById("title");
+    const descInput = document.getElementById("description");
+    const message = document.getElementById("message");
+
+    const title = titleInput.value.trim();
+    const description = descInput.value.trim();
+
+    if (!title) {
+        message.textContent = "Title is required.";
+        return;
+    }
+
+    try {
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, description, completed: false })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error("Error creating task:", errorData);
+            message.textContent = "Failed to create task. Check console.";
+            return;
+        }
+
+        titleInput.value = "";
+        descInput.value = "";
+        message.textContent = "Task added successfully!";
+        loadTasks();
+    } catch (error) {
+        console.error("Error creating task:", error);
+        message.textContent = "Error creating task. Check console.";
+    }
+});
+
+async function markComplete(id) {
+    try {
+        const response = await fetch(`${API_URL}/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ completed: true })
+        });
+
+        if (!response.ok) {
+            console.error("Failed to update task");
+            return;
+        }
+
+        loadTasks();
+    } catch (error) {
+        console.error("Error updating task:", error);
+    }
+}
+
+async function deleteTask(id) {
+    try {
+        const response = await fetch(`${API_URL}/${id}`, {
+            method: "DELETE"
+        });
+
+        if (!response.ok) {
+            console.error("Failed to delete task");
+            return;
+        }
+
+        loadTasks();
+    } catch (error) {
+        console.error("Error deleting task:", error);
+    }
+}
+
+// Load tasks when page opens
+loadTasks();
+</script>
+
+</body>
+</html>
